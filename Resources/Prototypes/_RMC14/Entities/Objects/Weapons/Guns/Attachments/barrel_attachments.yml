@@ -448,6 +448,29 @@
     - RMCAttachmentBarrel
     - RMCAttachmentMatebaSnubNoseGolden
 
+- type: entity
+  parent: RMCBarrelAttachmentBase
+  id: RMCAttachmentRifleGrenades #Non-parity: if this shows up in a PR I have for something else I'm so sorry
+  components:
+    - type: Gun
+      soundGunshot:
+        path: /Audio/_RMC14/Weapons/Guns/Gunshots/m79_shoot.ogg
+    - type: RMCSelectiveFire
+      baseFireRate: 0.833
+    - type: BallisticAmmoProvider
+      whitelist:
+        tags:
+        - LauncherCompatibleGrenade
+      capacity: 1
+      soundInsert:
+        path: /Audio/_RMC14/Weapons/Guns/Reload/m79_reload.ogg
+    - type: GunIFF
+      enabled: true
+    - type: ShootAtFixedPoint
+      shootArcProj: true
+      maxFixedRange: 7
+    - type: RMCRifleGrenade
+
 - type: Tag
   id: RMCAttachmentBarrel
 
@@ -510,3 +533,6 @@
 
 - type: Tag
   id: RMCAttachmentMatebaSnubNoseGolden
+
+- type: Tag
+  id: RMCAttachmentRifleGrenades
