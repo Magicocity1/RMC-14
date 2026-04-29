@@ -31,6 +31,19 @@ using Robust.Shared.Network;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Timing;
 using Robust.Shared.Utility;
+using Content.Shared._RMC14.Attachable.Events;
+using Content.Shared.Weapons.Ranged.Events;
+using Content.Shared._RMC14.Weapons.Ranged.Flamer;
+using Content.Shared.Weapons.Ranged.Systems;
+using Content.Shared.Chemistry.EntitySystems;
+using Content.Shared.Chemistry.Reagent;
+using Content.Shared.Weapons.Ranged.Components;
+using Robust.Shared.Map;
+using Robust.Shared.Prototypes;
+using Robust.Shared.Utility;
+using Content.Shared._RMC14.Weapons.Common;
+using Robust.Shared.Audio.Systems;
+using Robust.Shared.Containers;
 
 namespace Content.Shared._RMC14.Weapons.Ranged.RifleGrenade;
 
@@ -61,7 +74,12 @@ public abstract class SharedRMCRifleGrenadeSystem : EntitySystem
     public override void Initialize()
     {
 
-        //SubscribeLocalEvent<RMCFlamerAmmoProviderComponent, TakeAmmoEvent>(OnTakeAmmo);
+        SubscribeLocalEvent<RMCRifleGrenadeComponent, TakeAmmoEvent>(OnTakeAmmo);
+        SubscribeLocalEvent<RMCRifleGrenadeComponent, AttachableAlteredEvent>(InitRG);
+        SubscribeLocalEvent<RMCRifleGrenadeComponent, EntInsertedIntoContainerMessage>(OnInsertedIntoContainer);
+        SubscribeLocalEvent<RMCRifleGrenadeComponent, EntRemovedFromContainerMessage>(OnRemovedFromContainer);
+        SubscribeLocalEvent<RMCRifleGrenadeComponent, GetAmmoCountEvent>(GetAmmoCount);
+        SubscribeLocalEvent<RMCRifleGrenadeComponent, AttemptShootEvent>(AttemptShoot);
 
 
     }
@@ -75,12 +93,82 @@ public abstract class SharedRMCRifleGrenadeSystem : EntitySystem
       I don't need to care about balance now
       Actual polish can wait -- this thing just needs to work for a demo
     */
+    private void InitRG(Entity<RMCRifleGrenadeComponent> ent, ref AttachableAlteredEvent args)
+    {
+      // I'm reusing this pattern from my vesg attempt -- no clue if it's good or not -- I just know it works enough
+      switch (args.Alteration)
+        {
+            case AttachableAlteredType.Attached:
+                ent.Comp.Holder = args.Holder;
+                Dirty(ent, ent.Comp);
+                break;
+            case AttachableAlteredType.Detached:
+                ent.Comp.Holder = null;
+                Dirty(ent, ent.Comp);
+                break;
+        }
+    }
 
 
-    //private void OnTakeAmmo(Entity<RMCFlamerAmmoProviderComponent> ent, ref TakeAmmoEvent args)
-    //{
-    //    args.Ammo.Add((ent, ent.Comp));
-    //}
+    private void OnTakeAmmo(Entity<RMCRifleGrenadeComponent> ent, ref TakeAmmoEvent args)
+    {
+        args.Ammo.Add((ent, ent.Comp));
+
+    }
+
+    private void OnInsertedIntoContainer(Entity<RMCRifleGrenadeComponent> ent, ref EntInsertedIntoContainerMessage args)
+    {
+      if ( ! (ent.Comp.Holder != null))
+        return;
+      if(!TryComp(ent.Comp.Holder, out ItemSlotsComponent? slots))
+        return;
+      //TryInsertFromHand <--- use this
+    }
+
+    private void OnRemovedFromContainer(Entity<RMCRifleGrenadeComponent> ent, ref EntRemovedFromContainerMessage args)
+    {
+      if ( ! (ent.Comp.Holder != null))
+        return;
+      if(!TryComp(ent.Comp.Holder, out ItemSlotsComponent? slots))
+        return;
+      //TryEjectToHands(); <--- use this
+    }
+
+
+    private void GetAmmoCount(Entity<RMCRifleGrenadeComponent> ent, ref GetAmmoCountEvent args)
+    {
+      if ( ! (ent.Comp.Holder != null))
+            return;
+        if(!TryComp(ent.Comp.Holder, out ItemSlotsComponent? slots))
+            return;
+        if(!TryComp(ent, out BallisticAmmoProvider? grenade))
+          return;
+        bool hasitem = slots["gun_magazine"].HasItem;
+        if(!hasitem){
+          args.Count = grenade.Count;
+          args.Capacity = grenade.Capacity;
+          return;
+        }
+        else{
+          args.Count = slots["gun_magazine"].Count + grenade.Count;
+          args.Capacity = slots["gun_magazine"].Capacity + grenade.Count; //grenade capacity might allow a normal bullet to get loaded
+          return;
+        }
+    }
+
+    private void AttemptShoot(Entity<RMCRifleGrenadeComponent> ent, ref AttemptShootEvent args)
+    {
+      if ( ! (ent.Comp.Holder != null))
+            return;
+        if(!TryComp(ent.Comp.Holder, out GunComponent? hold))
+            return;
+        if(!TryComp(ent, out GunComponent? grenade))
+          return;
+        if (!grenade.AttemptShoot().isEmpty ) // This pattern ... now get the types and shit in sync
+          return;
+        if (!hold.AttemptShoot().isEmpty )
+          return;
+    }
 
 
 }

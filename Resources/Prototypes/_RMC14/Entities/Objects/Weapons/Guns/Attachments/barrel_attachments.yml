@@ -453,6 +453,7 @@
   id: RMCAttachmentRifleGrenades #Non-parity: if this shows up in a PR I have for something else I'm so sorry
   components:
     - type: Gun
+      projectileSpeed: 20
       soundGunshot:
         path: /Audio/_RMC14/Weapons/Guns/Gunshots/m79_shoot.ogg
     - type: RMCSelectiveFire
