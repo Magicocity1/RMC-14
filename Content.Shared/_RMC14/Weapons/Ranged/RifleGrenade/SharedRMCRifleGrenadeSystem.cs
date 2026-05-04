@@ -35,6 +35,7 @@ using Content.Shared._RMC14.Attachable.Events;
 using Content.Shared.Weapons.Ranged.Events;
 using Content.Shared._RMC14.Weapons.Ranged.Flamer;
 using Content.Shared.Weapons.Ranged.Systems;
+using Content.Shared.Containers;
 using Content.Shared.Chemistry.EntitySystems;
 using Content.Shared.Chemistry.Reagent;
 using Content.Shared.Weapons.Ranged.Components;
@@ -44,6 +45,8 @@ using Robust.Shared.Utility;
 using Content.Shared._RMC14.Weapons.Common;
 using Robust.Shared.Audio.Systems;
 using Robust.Shared.Containers;
+using Content.Shared.Containers.ItemSlots;
+using Content.Shared.Weapons.Ranged.Components;
 
 namespace Content.Shared._RMC14.Weapons.Ranged.RifleGrenade;
 
@@ -111,8 +114,11 @@ public abstract class SharedRMCRifleGrenadeSystem : EntitySystem
 
 
     private void OnTakeAmmo(Entity<RMCRifleGrenadeComponent> ent, ref TakeAmmoEvent args)
-    {
+    { 
+        if (ent.Comp.Holder == null)
+          return;
         args.Ammo.Add((ent, ent.Comp));
+
 
     }
 
@@ -120,9 +126,10 @@ public abstract class SharedRMCRifleGrenadeSystem : EntitySystem
     {
       if ( ! (ent.Comp.Holder != null))
         return;
-      if(!TryComp(ent.Comp.Holder, out ItemSlotsComponent? slots))
+      if(!TryComp(ent.Comp.Holder.GetValueOrDefault(), out ItemSlotsComponent? slots))
         return;
       //TryInsertFromHand <--- use this
+      //RaiseLocalEvent<RMCFlamerAmmoProviderComponent>(wrapper);
     }
 
     private void OnRemovedFromContainer(Entity<RMCRifleGrenadeComponent> ent, ref EntRemovedFromContainerMessage args)
@@ -132,6 +139,7 @@ public abstract class SharedRMCRifleGrenadeSystem : EntitySystem
       if(!TryComp(ent.Comp.Holder, out ItemSlotsComponent? slots))
         return;
       //TryEjectToHands(); <--- use this
+      //RaiseLocalEvent<RMCFlamerAmmoProviderComponent>(wrapper);
     }
 
 
@@ -141,7 +149,7 @@ public abstract class SharedRMCRifleGrenadeSystem : EntitySystem
             return;
         if(!TryComp(ent.Comp.Holder, out ItemSlotsComponent? slots))
             return;
-        if(!TryComp(ent, out BallisticAmmoProvider? grenade))
+        if(!TryComp(ent, out BallisticAmmoProviderComponent? grenade))
           return;
         bool hasitem = slots["gun_magazine"].HasItem;
         if(!hasitem){
@@ -168,6 +176,7 @@ public abstract class SharedRMCRifleGrenadeSystem : EntitySystem
           return;
         if (!hold.AttemptShoot().isEmpty )
           return;
+        //RaiseLocalEvent<RMCFlamerAmmoProviderComponent>(wrapper);
     }
 
 
