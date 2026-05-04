@@ -47,6 +47,9 @@ using Robust.Shared.Audio.Systems;
 using Robust.Shared.Containers;
 using Content.Shared.Containers.ItemSlots;
 using Content.Shared.Weapons.Ranged.Components;
+using Content.Shared.Containers;
+using Content.Shared.Containers.ItemSlots;
+using Robust.Shared.Containers;
 
 namespace Content.Shared._RMC14.Weapons.Ranged.RifleGrenade;
 
@@ -74,6 +77,8 @@ public abstract class SharedRMCRifleGrenadeSystem : EntitySystem
     [Dependency] private readonly IPrototypeManager _prototypes = default!;
     [Dependency] private readonly RMCProjectileSystem _projectile = default!;
 
+    [Dependency] protected readonly SharedContainerSystem Containers = default!;
+    public const string MagazineSlot = "gun_magazine";
     public override void Initialize()
     {
 
@@ -117,8 +122,19 @@ public abstract class SharedRMCRifleGrenadeSystem : EntitySystem
     { 
         if (ent.Comp.Holder == null)
           return;
-        args.Ammo.Add((ent, ent.Comp));
-
+        
+        if (!Containers.TryGetContainer(ent.Comp.Holder.GetValueOrDefault(), MagazineSlot, out var container) ||
+            container is not ContainerSlot slot)
+        { 
+          if(!TryComp(ent, out BallisticAmmoProviderComponent? grenade))
+            return;
+          Entity<BallisticAmmoProviderComponent> wrapper = (ent.Comp.Holder.GetValueOrDefault(),grenade);
+          RaiseLocalEvent<BallisticAmmoProviderComponent>(wrapper);
+          return;
+        }
+        if(!TryComp(slot.ContainedEntity.GetValueOrDefault(), out BallisticAmmoProviderComponent? mag))
+            return;
+          RaiseLocalEvent<BallisticAmmoProviderComponent>(ent.Comp.Holder.GetValueOrDefault(), mag);
 
     }
 
@@ -128,18 +144,18 @@ public abstract class SharedRMCRifleGrenadeSystem : EntitySystem
         return;
       if(!TryComp(ent.Comp.Holder.GetValueOrDefault(), out ItemSlotsComponent? slots))
         return;
-      //TryInsertFromHand <--- use this
-      //RaiseLocalEvent<RMCFlamerAmmoProviderComponent>(wrapper);
+      
+      RaiseLocalEvent<>(wrapper);
     }
 
     private void OnRemovedFromContainer(Entity<RMCRifleGrenadeComponent> ent, ref EntRemovedFromContainerMessage args)
     {
-      if ( ! (ent.Comp.Holder != null))
+      if (ent.Comp.Holder == null)
         return;
       if(!TryComp(ent.Comp.Holder, out ItemSlotsComponent? slots))
         return;
-      //TryEjectToHands(); <--- use this
-      //RaiseLocalEvent<RMCFlamerAmmoProviderComponent>(wrapper);
+      
+      RaiseLocalEvent<>(wrapper);
     }
 
 
@@ -151,18 +167,19 @@ public abstract class SharedRMCRifleGrenadeSystem : EntitySystem
             return;
         if(!TryComp(ent, out BallisticAmmoProviderComponent? grenade))
           return;
-        bool hasitem = slots["gun_magazine"].HasItem;
-        if(!hasitem){
-          args.Count = grenade.Count;
-          args.Capacity = grenade.Capacity;
-          return;
+        if (!Containers.TryGetContainer(ent.Comp.Holder.GetValueOrDefault(), MagazineSlot, out var container) ||
+            container is not ContainerSlot slot)
+        {
+            args.Count = grenade.Count;
+            args.Capacity = grenade.Capacity;
+            return;
         }
-        else{
-          args.Count = slots["gun_magazine"].Count + grenade.Count;
-          args.Capacity = slots["gun_magazine"].Capacity + grenade.Count; //grenade capacity might allow a normal bullet to get loaded
+        if(!TryComp(slot.ContainedEntity, out BallisticAmmoProviderComponent? mag))
           return;
+        args.Count = mag.Count + grenade.Count;
+        args.Capacity = mag.Capacity + grenade.Count; //grenade capacity might allow a normal bullet to get loaded
+        return;
         }
-    }
 
     private void AttemptShoot(Entity<RMCRifleGrenadeComponent> ent, ref AttemptShootEvent args)
     {
@@ -172,10 +189,24 @@ public abstract class SharedRMCRifleGrenadeSystem : EntitySystem
             return;
         if(!TryComp(ent, out GunComponent? grenade))
           return;
-        if (!grenade.AttemptShoot().isEmpty ) // This pattern ... now get the types and shit in sync
+        if(!TryComp(ent.Comp.Holder, out ItemSlotsComponent? slots))
+            return;
+        if(!TryComp(ent, out BallisticAmmoProviderComponent? grenadeAmmo))
           return;
-        if (!hold.AttemptShoot().isEmpty )
+        if(grenadeAmmo.Count > 0)
+        {
+          Entity<GunComponent> wrap = (ent, grenade);
+          RaiseLocalEvent<GunComponent>(wrap); 
           return;
+        }
+        // Even though shooting the gun is "default" behavior I needed the trygetcontainer working I just used this space and my linter
+        if (!Containers.TryGetContainer(ent.Comp.Holder.GetValueOrDefault(), MagazineSlot, out var container) ||
+            container is not ContainerSlot slot)
+        {
+            return;
+        }
+        Entity<GunComponent> wrapper = (ent.Comp.Holder.GetValueOrDefault(),hold);
+        RaiseLocalEvent<GunComponent>(wrapper);
         //RaiseLocalEvent<RMCFlamerAmmoProviderComponent>(wrapper);
     }
 
