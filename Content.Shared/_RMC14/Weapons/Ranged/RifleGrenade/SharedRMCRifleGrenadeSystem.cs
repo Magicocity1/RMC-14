@@ -144,7 +144,7 @@ public abstract class SharedRMCRifleGrenadeSystem : EntitySystem
         return;
       if(!TryComp(ent.Comp.Holder.GetValueOrDefault(), out ItemSlotsComponent? slots))
         return;
-      
+      //Entity<BallisticAmmoProviderComponent> wrapper = (ent.Comp.Holder.GetValueOrDefault(),grenade);
       RaiseLocalEvent<>(wrapper);
     }
 
@@ -154,7 +154,7 @@ public abstract class SharedRMCRifleGrenadeSystem : EntitySystem
         return;
       if(!TryComp(ent.Comp.Holder, out ItemSlotsComponent? slots))
         return;
-      
+      //Entity<BallisticAmmoProviderComponent> wrapper = (ent.Comp.Holder.GetValueOrDefault(),grenade);
       RaiseLocalEvent<>(wrapper);
     }
 
